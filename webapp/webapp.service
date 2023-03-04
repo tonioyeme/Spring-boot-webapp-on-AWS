@@ -1,0 +1,19 @@
+[Unit]
+Description=Web Application Service
+After=syslog.target
+
+[Service]
+User=ec2-user
+ExecStart=/usr/bin/java -jar /opt/webapp.jar
+SuccessExitStatus=143
+WorkingDirectory = /opt
+Restart = always
+RestartSec = 10
+StandardOutput = syslog
+StandardError = syslog
+SyslogIdentifier = webapp
+
+
+
+[Install]
+WantedBy=multi-user.target

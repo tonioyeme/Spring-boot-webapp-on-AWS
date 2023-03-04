@@ -1,0 +1,9 @@
+[Unit]
+Description=Install Dependencies for Spring Boot Web App
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'sudo yum update -y && sudo yum -y install java-17-amazon-corretto.x86_64 && sudo systemctl daemon-reload && sudo yum install -y httpd && sudo systemctl start httpd && sudo systemctl enable httpd'
+
+[Install]
+WantedBy=multi-user.target

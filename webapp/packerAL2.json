@@ -1,0 +1,125 @@
+{
+    "variables": {
+        "aws_region": "{{user `aws_region`}}",
+        "source_ami": "ami-0c94855ba95c71c99",
+        "ssh_username": "ec2-user",
+        "app_name": "{{user `app_name`}}",
+        "jar_path": "{{user `jar_path`}}",
+        "config_path": "{{user `config_path`}}",
+        "ami_users": "220847850958"
+        
+    },
+    "builders": [
+        {
+            "type": "amazon-ebs",
+            "profile": "dev",
+            "region": "{{user `aws_region`}}",
+            "source_ami": "{{user `source_ami`}}",
+            "instance_type": "t2.micro",
+            "ssh_username": "{{user `ssh_username`}}",
+            "ami_name": "custom-amazon-linux-2-{{timestamp}}",
+            "ssh_timeout": "10m",
+            "tags": {
+                "Name": "Custom Amazon Linux 2 AMI"
+
+            }
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "file",
+            "source": "webapp/target/webapp.jar",
+            "destination": "/tmp/webapp.jar"
+        },
+
+        {
+            "type": "file",
+            "source": "webapp/src/main/resources/application.properties",
+            "destination": "/tmp/application.properties"
+        },
+
+        {
+            "type": "file",
+            "source": "dependencies.service",
+            "destination": "/tmp/dependencies.service"
+        },
+
+        {
+            "type": "file",
+            "source": "webapp.service",
+            "destination": "/tmp/webapp.service"
+        },
+
+        {
+            "type": "file",
+            "source": "aws/userdata.sh",
+            "destination": "/tmp/userdata.sh"
+        },
+        
+
+        {
+            "type": "shell",
+            "inline": [
+                "sudo chmod a+w /etc/systemd/system",
+                "sudo chmod a+w /opt",
+                "sudo cp /tmp/webapp.jar /opt/webapp.jar",
+
+                "sudo yum update -y",
+                "sudo yum -y install java-17-amazon-corretto.x86_64",
+                "sudo yum install -y java-1.8.0-openjdk",
+                
+                "sudo systemctl daemon-reload",
+                "sudo packer plugin install amazon-ami",
+
+                "sudo yum install -y mariadb-server", 
+                "sudo systemctl start mariadb",
+                "sudo systemctl enable mariadb",
+                "sudo mysqladmin -u root password 'zzyTnl2023228!!!'",
+                "sudo mysql -u root -p'zzyTnl2023228!!!' -e 'CREATE DATABASE webapp' ",
+
+                "sudo yum install -y httpd",
+                 "sudo systemctl start httpd",
+                 "sudo systemctl enable httpd",
+
+                "sudo chmod a+rwx /etc/systemd/system",
+                "sudo chmod a+rwx /opt",
+                "sudo cp /tmp/webapp.jar /opt/webapp.jar",
+                "sudo mv /tmp/webapp.service /etc/systemd/system/webapp.service",
+                "sudo mv /tmp/dependencies.service /etc/systemd/system/dependencies.service",
+                "sudo systemctl daemon-reload",
+                "sudo systemctl enable webapp.service",
+                "sudo systemctl start webapp.service"
+            ]
+        },
+
+        {
+            "type": "shell",
+            "script": "install.sh"
+          },
+          {
+            "type": "file",
+            "source": "userdata.sh",
+            "destination": "/tmp/userdata.sh"
+          },
+          {
+            "type": "shell",
+            "inline": [
+              "chmod +x /tmp/userdata.sh",
+              "cat /tmp/userdata.sh | base64 | tr -d '\n' > /tmp/userdata.b64"
+            ]
+          }],
+          "user_data": {
+            "file": "/tmp/userdata.b64"
+          },
+
+    "post-processors": [
+        [
+          {
+            "output": "manifest.json",
+            "strip_path": true,
+            "type": "manifest"
+          }
+        ]
+    ]
+
+}
